@@ -1,0 +1,37 @@
+services:
+  rabbitmq:
+    image: rabbitmq:4-management
+    container_name: rabbitmq
+    hostname: rabbitmq-vm
+    restart: unless-stopped
+
+    # Initial broker user/password (RabbitMQ official image; first init of empty data volume only).
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-app_user}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-change_me_before_production}
+      RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_DEFAULT_VHOST:-/}
+
+    # Port bindings: set RABBITMQ_* in a project-root .env (Compose loads it automatically).
+    # RABBITMQ_BIND_IP, RABBITMQ_AMQP_HOST_PORT — TLS AMQP (host -> container 5671).
+    # RABBITMQ_MGMT_BIND, RABBITMQ_MGMT_HOST_PORT — management UI (host -> container 15672).
+    # Defaults match the previous hard-coded setup if .env is absent.
+    ports:
+      - "${RABBITMQ_BIND_IP:-10.10.0.10}:${RABBITMQ_AMQP_HOST_PORT:-5671}:5671"
+      # Management UI: keep bind on loopback unless you explicitly override.
+      - "${RABBITMQ_MGMT_BIND:-127.0.0.1}:${RABBITMQ_MGMT_HOST_PORT:-15672}:15672"
+
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+      - ./config/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+      # Local folder (path on host) mounted as /etc/rabbitmq/certs — must contain ca.pem, server.pem, server.key.
+      # Set RABBITMQ_CERTS_DIR in .env to swap keysets (e.g. ./certs/prod vs ./certs/staging).
+      - "${RABBITMQ_CERTS_DIR:-./certs}:/etc/rabbitmq/certs:ro"
+
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+volumes:
+  rabbitmq_data:
