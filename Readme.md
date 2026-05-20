@@ -1,3 +1,25 @@
+# Example Usage
+ch is the channel object in RabbitMQ.
+
+Think of the flow like this:
+`Connection` → connect to RabbitMQ server
+`Channel (ch)` → a communication pipe inside that connection
+`Exchange` → receives messages
+`Queue` → stores messages
+`Consumer` → reads messages from queue
+
+```python
+with pika.BlockingConnection(params) as conn:
+    ch = conn.channel()
+
+ch.exchange_declare(...)   # create exchange
+ch.queue_declare(...)      # create queue
+ch.queue_bind(...)         # bind queue
+ch.basic_publish(...)      # send message
+ch.basic_consume(...)      # receive message
+```
+
+
 ## check the openSSl in windows
 ```bash
 where.exe openssl 2>$null; if (Test-Path "C:\Program Files\Git\usr\bin\openssl.exe") { & "C:\Program Files\Git\usr\bin\openssl.exe" version }; docker version 2>$null | Select-Object -First 5
